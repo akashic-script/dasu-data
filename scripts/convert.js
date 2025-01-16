@@ -4,12 +4,11 @@ const path = require('path');      // Path module for file paths
 
 // Define input and export directories
 const importDir = path.join(__dirname, 'input'); // Input folder for CSV files
-const exportDir = path.join(__dirname, 'output'); // Parent directory 'lib' folder
-// const exportDir = path.join(__dirname, '..', 'lib');
+const exportDir = path.join(__dirname, 'output'); // Export folder for JSON files
 
 // Function to automatically convert data types
 function convertValue(value) {
-    if (value === '') return null; // Empty string can be treated as null (optional)
+    if (value === '') return null;
 
     // Convert "true" or "false" to boolean
     if (value.toLowerCase() === 'true') return true;
@@ -20,7 +19,6 @@ function convertValue(value) {
         return parseFloat(value); // This will convert strings like "123" or "45.67" to numbers
     }
 
-    // Otherwise, return as a string (no conversion)
     return value;
 }
 
@@ -61,12 +59,11 @@ fs.readdir(importDir, (err, files) => {
         fs.readFile(csvFilePath, 'utf8', (err, data) => {
             if (err) return console.error(`Error reading file ${file}:`, err);
 
-            // Parse CSV data and convert aptKey/aptValue to nested object
+            // Parse CSV data
             Papa.parse(data, {
                 header: true,
                 skipEmptyLines: true,
                 complete: result => {
-                    // Transform data: Check for aptKey/aptValue and convert them
                     result.data = result.data.map(row => {
                         // Convert all values in the row based on their types
                         Object.keys(row).forEach(key => {
