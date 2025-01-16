@@ -4,7 +4,8 @@ const path = require('path');      // Path module for file paths
 
 // Define input and export directories
 const importDir = path.join(__dirname, 'input'); // Input folder for CSV files
-const exportDir = path.join(__dirname, '..', 'lib'); // Parent directory 'lib' folder
+const exportDir = path.join(__dirname, 'output'); // Parent directory 'lib' folder
+// const exportDir = path.join(__dirname, '..', 'lib');
 
 // Function to automatically convert data types
 function convertValue(value) {
