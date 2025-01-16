@@ -1,0 +1,27 @@
+{
+  "name": "dsmn-data",
+  "version": "0.0.0",
+  "description": "Data for the DSMN TTRPG",
+  "main": "index.js",
+  "scripts": {
+    "convert": "node ./scripts/convert.js",
+    "build": "node ./scripts/build.js",
+    "test": "node ./scripts/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akashic-script/dsmn-data.git"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "author": "Akashic Script",
+  "license": "",
+  "devDependencies": {
+    "papaparse": "^5.5.1",
+    "zip-lib": "^1.0.5"
+  },
+  "dependencies": {
+    "fs-extra": "^11.2.0"
+  }
+}
