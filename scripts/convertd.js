@@ -1,6 +1,7 @@
 const fs = require('fs-extra');
 const Papa = require('papaparse');
 const path = require('path');
+
 const { afflictions, archetypes, subtypes, roles, tactics, weapons, spells, restoratives, techniques } = require('../index'); // Use pre-imported data
 
 const importDir = path.join(__dirname, 'input');
@@ -9,7 +10,7 @@ const exportDir = path.join(__dirname, 'output');
 fs.ensureDirSync(exportDir);
 
 // Function to generate a random ID
-export function generateID() {
+function generateID() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let id = '';
     for (let i = 0; i < 20; i++) {
