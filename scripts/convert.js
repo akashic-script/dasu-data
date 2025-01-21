@@ -61,7 +61,7 @@ fs.readdir(importDir, (err, files) => {
     if (err) return console.error("Error reading directory:", err);
 
     // Filter CSV files and process each
-    files.filter(file => file.endsWith('.csv')).forEach(file => {
+    files.filter(file => file.endsWith('.csv') && file !== 'daemon.csv').forEach(file => {
         const csvFilePath = path.join(importDir, file);
         const jsonFilePath = path.join(exportDir, file.replace('.csv', '.json'));
 

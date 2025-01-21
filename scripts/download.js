@@ -6,7 +6,7 @@ const path = require('path');
 const SPREADSHEET_ID = '1ol7slaVe8KyMbCJcKZnWWqS17y4mU9YLMUzIvrntphE';
 
 // Insert your sheet names here
-const sheetNames = ['manifest', 'items', 'weapons', 'tags', 'spells', 'afflictions', 'restoratives', 'techniques', 'tactics', 'statuses', 'specialabilities', 'transformations', 'scars', 'arbitrations'];
+const sheetNames = ['manifest', 'daemon', 'archetypes', 'subtypes', 'roles', 'items', 'weapons', 'tags', 'spells', 'afflictions', 'restoratives', 'techniques', 'tactics', 'statuses', 'specialabilities', 'transformations', 'scars', 'arbitrations'];
 
 async function downloadSheets() {
     const inputDir = path.join(__dirname, '../scripts/input');

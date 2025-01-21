@@ -1,9 +1,12 @@
 "use script"
 
 const data = {
+    archetypes: require("./scripts/output/archetypes.json"),
+    subtypes: require("./scripts/output/subtypes.json"),
+    roles: require("./scripts/output/roles.json"),
     afflictions: require("./scripts/output/afflictions.json"),
     arbitrations: require("./scripts/output/arbitrations.json"),
-    manifest: require("./scripts/output/info.json"),
+    manifest: require("./scripts/output/manifest.json"),
     items: require("./scripts/output/items.json"),
     restoratives: require("./scripts/output/restoratives.json"),
     scars: require("./scripts/output/scars.json"),
