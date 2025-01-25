@@ -90,7 +90,9 @@ const processRow = (row, lookup) => {
             acc[stat] = { mod: parseInt(row[`${stat}.mod`]) || 0 };
             return acc;
         }, {}),
-        aptitudes: {},
+        aptitudes: {
+            i: 0, el: 0, w: 0, ea: 0, l: 0, d: 0, dp: 0, dm: 0, da: 0, h: 0, tb: 0, tt: 0, tg: 0, ta: 0, assist: 0
+        },
         resistances: { p: 'normal', f: 'normal', i: 'normal', el: 'normal', w: 'normal', ea: 'normal', l: 'normal', d: 'normal' },
         weapons: row.weapons ? row.weapons.split(',').map(weapon => ({ id: weapon.trim(), name: '', category: 'weapon', range: '', damage: 0, toHit: 0, cost: 0, tags: [], description: '' })) : [],
         abilities: {
