@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Insert your google sheet ID here
-const SPREADSHEET_ID = '1ol7slaVe8KyMbCJcKZnWWqS17y4mU9YLMUzIvrntphE';
+const SPREADSHEET_ID = '1TZ-sLBcWUnfy6JBSMKDb8UyUUN5HykMN-SG_WB4e2vg';
 
 // Insert your sheet names here
 const sheetNames = ['manifest', 'daemon', 'archetypes', 'subtypes', 'roles', 'items', 'weapons', 'tags', 'spells', 'afflictions', 'restoratives', 'techniques', 'tactics', 'statuses', 'specialabilities', 'transformations', 'scars', 'arbitrations'];

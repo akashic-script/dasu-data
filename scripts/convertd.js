@@ -52,37 +52,40 @@ const populateFromLookup = (key, item, lookup) => {
         console.log(`Populated ${key} with ID: ${item.id}`);
     } else {
         console.warn(`No matching item found for ${key} with ID: ${item.id}`);
-        item.name = item.name || 'Unknown'; // Fallback to a default name
-        item.description = item.description || 'No description available.'; // Add a fallback for description
+        item.name = item.name || 'Unknown';
+        item.description = item.description || 'No description available.';
     }
 };
 
 // Function to process each CSV row and map it to daemon structure
 const processRow = (row, lookup) => {
-    console.log("Processing row:", row); // Log the CSV row
-
     const newDaemon = {
         id: generateID(),
         dsid: row.id || '',
         publishId: '',
         name: row.name || 'Cyrus',
+        image: {
+            src: '',
+            credit: '',
+        },
         level: parseInt(row.level) || 1,
         merit: parseInt(row.merit) || 0,
-        archetypes: {  // Handle archetypes as an object
+        archetypes: {
             id: row.archetype || '',
             name: '',
             category: 'archetype',
             description: '',
             benefits: ''
         },
-        subtypes: {  // Handle subtypes as an object
+        subtypes: {
             id: row.subtype || '',
             name: '',
             category: 'subtype',
             description: ''
         },
         roles: row.role ? row.role.split(',').map(role => ({ id: role.trim(), name: '', category: 'role', description: '' })) : [],
-        attributes: ['str', 'int', 'dex', 'will', 'sta'].reduce((acc, attr) => {
+        origin: row.origin ? row.origin.split(',').map(item => item.trim()) : [],
+        attributes: ['pwr', 'dex', 'will', 'sta'].reduce((acc, attr) => {
             acc[attr] = { base: parseInt(row[attr]) || 3, mod: parseInt(row[`${attr}.mod`]) || 0 };
             return acc;
         }, {}),

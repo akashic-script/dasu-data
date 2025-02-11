@@ -9,7 +9,7 @@
     "convertd": "node ./scripts/convertd.js",
     "build": "node ./scripts/build.js",
     "validate": "node ./scripts/validate.js",
-    "start": "npm run download && npm run convert && npm run validate && npm run build"
+    "start": "npm run download && npm run convert && npm run convertd && npm run validate && npm run build"
   },
   "repository": {
     "type": "git",

@@ -1,5 +1,8 @@
 "use script"
 
+const fs = require('fs');
+const path = require('path');
+
 const data = {
     archetypes: require("./scripts/output/archetypes.json"),
     subtypes: require("./scripts/output/subtypes.json"),
@@ -18,6 +21,13 @@ const data = {
     techniques: require("./scripts/output/techniques.json"),
     transformations: require("./scripts/output/transformations.json"),
     weapons: require("./scripts/output/weapons.json"),
+}
+
+const daemonFilePath = "./scripts/output/daemon.json";
+
+// Check if the file exists
+if (fs.existsSync(path.resolve(daemonFilePath))) {
+    data.daemon = require(daemonFilePath);
 }
 
 module.exports = data
