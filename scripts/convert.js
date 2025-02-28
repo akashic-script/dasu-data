@@ -37,17 +37,12 @@ const processRow = (row) => {
     row = handleDotNotation(row);
 
     // Handle aptKey and aptValue
-    if (row.aptKey === null && row.aptValue === null) {
-        delete row.aptKey;
-        delete row.aptValue;
-        row.aptitudes = {};
-    } else if (row.aptKey && row.aptValue) {
-        row.aptitudes = { [row.aptKey]: row.aptValue };
-        delete row.aptKey;
-        delete row.aptValue;
+    if (row.aptitude) {
+        const [aptKey, aptValue] = row.aptitude.split('-');
+        row.aptitudes = { [aptKey.toLowerCase()]: parseInt(aptValue, 10) };
+        delete row.aptitude;
     } else {
-        delete row.aptKey;
-        delete row.aptValue;
+        row.aptitudes = {};
     }
 
     // Ensure description is set to null if empty
