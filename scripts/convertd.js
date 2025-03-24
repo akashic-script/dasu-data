@@ -85,7 +85,7 @@ const processRow = (row, lookup) => {
         },
         roles: row.role ? row.role.split(',').map(role => ({ id: role.trim(), name: '', category: 'role', description: '' })) : [],
         origin: row.origin ? row.origin.split(',').map(item => item.trim()) : [],
-        attributes: ['pwr', 'dex', 'will', 'sta'].reduce((acc, attr) => {
+        attributes: ['pow', 'dex', 'will', 'sta'].reduce((acc, attr) => {
             acc[attr] = { base: parseInt(row[attr]) || 3, mod: parseInt(row[`${attr}.mod`]) || 0 };
             return acc;
         }, {}),

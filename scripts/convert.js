@@ -37,12 +37,9 @@ const processRow = (row) => {
     row = handleDotNotation(row);
 
     // Handle aptKey and aptValue
-    if (row.aptitude) {
-        const [aptKey, aptValue] = row.aptitude.split('-');
-        row.aptitudes = { [aptKey.toLowerCase()]: parseInt(aptValue, 10) };
-        delete row.aptitude;
-    } else {
-        row.aptitudes = {};
+    if (row.aptitudes) {
+        const [aptKey, aptValue] = row.aptitudes.split('-');  // Split "F-1" into ["F", "1"]
+        row.aptitudes = { [aptKey.toLowerCase()]: parseInt(aptValue, 10) };  // Create the aptitudes object
     }
 
     // Ensure description is set to null if empty
