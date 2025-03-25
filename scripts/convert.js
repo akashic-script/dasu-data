@@ -36,10 +36,14 @@ const processRow = (row) => {
     Object.keys(row).forEach(key => row[key] = convertValue(row[key]));
     row = handleDotNotation(row);
 
-    // Handle aptKey and aptValue
-    if (row.aptitudes) {
-        const [aptKey, aptValue] = row.aptitudes.split('-');  // Split "F-1" into ["F", "1"]
-        row.aptitudes = { [aptKey.toLowerCase()]: parseInt(aptValue, 10) };  // Create the aptitudes object
+    // Handle aptitudes
+    if (row.hasOwnProperty("aptitudes")) {
+        if (row.aptitudes === null || row.aptitudes === '') {
+            row.aptitudes = {};
+        } else if (typeof row.aptitudes === 'string' && row.aptitudes.includes('-')) {
+            const [aptKey, aptValue] = row.aptitudes.split('-');  // Split "F-1" into ["F", "1"]
+            row.aptitudes = { [aptKey.toLowerCase()]: parseInt(aptValue, 10) };  // Create the aptitudes object
+        }
     }
 
     // Ensure description is set to null if empty
