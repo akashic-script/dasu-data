@@ -59,44 +59,69 @@ const populateFromLookup = (key, item, lookup) => {
 
 // Function to process each CSV row and map it to daemon structure
 const processRow = (row, lookup) => {
+    const num = (val, fallback = 0) => (val === undefined || val === null || val === '' ? fallback : parseInt(val, 10) || fallback);
+    const str = (val, fallback = '') => (val === undefined || val === null ? fallback : String(val));
+
     const newDaemon = {
-        id: generateID(),
-        dsid: row.id || '',
+        id: str(row.id) || generateID(),
+        dsid: str(row.dsid) || str(row.id) || generateID(),
         publishId: '',
-        name: row.name || 'Cyrus',
-        image: {
-            src: '',
-            credit: '',
-        },
-        level: parseInt(row.level) || 1,
-        merit: parseInt(row.merit) || 0,
+        type: 'daemon',
+        name: str(row.name, 'Unknown'),
+        image: { src: str(row['image.src']), credit: str(row['image.credit']) },
+        level: num(row.level, 1),
+        merit: num(row.merit, 0),
         archetypes: {
-            id: row.archetype || '',
-            name: '',
+            id: str(row.archetype),
+            name: str(row.archetype_name),
             category: 'archetype',
             description: '',
             benefits: ''
         },
         subtypes: {
-            id: row.subtype || '',
-            name: '',
+            id: str(row.subtype),
+            name: str(row.subtype_name),
             category: 'subtype',
             description: ''
         },
         roles: row.role ? row.role.split(',').map(role => ({ id: role.trim(), name: '', category: 'role', description: '' })) : [],
         origin: row.origin ? row.origin.split(',').map(item => item.trim()) : [],
         attributes: ['pow', 'dex', 'will', 'sta'].reduce((acc, attr) => {
-            acc[attr] = { base: parseInt(row[attr]) || 3, mod: parseInt(row[`${attr}.mod`]) || 0 };
+            acc[attr] = { base: num(row[`${attr}.base`], 3), mod: num(row[`${attr}.mod`], 0) };
             return acc;
         }, {}),
         stats: ['hp', 'wp', 'avoid', 'def', 'toHit', 'toLand'].reduce((acc, stat) => {
-            acc[stat] = { mod: parseInt(row[`${stat}.mod`]) || 0 };
+            acc[stat] = { mod: num(row[`${stat}.mod`], 0) };
             return acc;
         }, {}),
         aptitudes: {
-            i: 0, el: 0, w: 0, ea: 0, l: 0, d: 0, dp: 0, dm: 0, da: 0, h: 0, tb: 0, tt: 0, tg: 0, ta: 0, assist: 0
+            f: num(row['apt.f']),
+            i: num(row['apt.i']),
+            el: num(row['apt.el']),
+            w: num(row['apt.w']),
+            ea: num(row['apt.ea']),
+            l: num(row['apt.l']),
+            d: num(row['apt.d']),
+            dp: num(row['apt.dp']),
+            dm: num(row['apt.dm']),
+            da: num(row['apt.da']),
+            h: num(row['apt.h']),
+            tb: num(row['apt.tb']),
+            tt: num(row['apt.tt']),
+            tg: num(row['apt.tg']),
+            ta: num(row['apt.ta']),
+            assist: num(row['apt.assist'])
         },
-        resistances: { p: 'normal', f: 'normal', i: 'normal', el: 'normal', w: 'normal', ea: 'normal', l: 'normal', d: 'normal' },
+        resistances: {
+            p: str(row['res.p'], 'normal'),
+            f: str(row['res.f'], 'normal'),
+            i: str(row['res.i'], 'normal'),
+            el: str(row['res.el'], 'normal'),
+            w: str(row['res.w'], 'normal'),
+            ea: str(row['res.ea'], 'normal'),
+            l: str(row['res.l'], 'normal'),
+            d: str(row['res.d'], 'normal')
+        },
         weapons: row.weapons ? row.weapons.split(',').map(weapon => ({ id: weapon.trim(), name: '', category: 'weapon', range: '', damage: 0, toHit: 0, cost: 0, tags: [], description: '' })) : [],
         abilities: {
             spells: row.spells ? row.spells.split(',').map(item => ({ id: item.trim(), name: '', category: 'spell', description: null, aptitudes: {} })) : [],
@@ -122,10 +147,9 @@ const processRow = (row, lookup) => {
         },
     };
 
-    // Process resistances
+    // Process resistances from columns like 'weak', 'resist', etc.
     const elementMap = { fire: 'f', ice: 'i', electric: 'el', wind: 'w', earth: 'ea', light: 'l', dark: 'd', physical: 'p' };
     const resistanceTypes = ['weak', 'resist', 'nullify', 'drain'];
-
     resistanceTypes.forEach(type => {
         if (row[type]) {
             row[type].split(',').map(el => el.trim()).forEach(element => {
@@ -135,21 +159,23 @@ const processRow = (row, lookup) => {
         }
     });
 
-    // Process aptitudes
+    // Process aptitudes from a single 'aptitude' column (e.g., "f-2, i-1")
     if (row.aptitude) {
         row.aptitude.split(',').map(apt => apt.trim()).forEach(apt => {
             const [key, value] = apt.split('-').map(part => part.trim());
-            if (key && value && parseInt(value) >= 0) newDaemon.aptitudes[key.toLowerCase()] = parseInt(value);
+            if (key && value && !isNaN(parseInt(value))) newDaemon.aptitudes[key.toLowerCase()] = parseInt(value);
         });
     }
 
     // Populate data from the lookup
     const populateField = (key) => {
         // Check if it's an array (like 'roles' or 'abilities.spells')
+
         if (Array.isArray(newDaemon[key])) {
             newDaemon[key].forEach(item => populateFromLookup(key, item, lookup));
         } else {
             // If it's not an array (like 'archetypes' or 'subtypes')
+
             populateFromLookup(key, newDaemon[key], lookup);
         }
     };

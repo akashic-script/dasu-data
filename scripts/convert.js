@@ -31,26 +31,72 @@ const handleDotNotation = (row) => {
 // Ensure the export directory exists
 fs.ensureDirSync(exportDir);
 
+const defaultAptitudes = {
+    f: 0,
+    i: 0,
+    el: 0,
+    w: 0,
+    ea: 0,
+    l: 0,
+    d: 0,
+    dp: 0,
+    dm: 0,
+    da: 0,
+    h: 0,
+    tb: 0,
+    tt: 0,
+    tg: 0,
+    ta: 0,
+    assist: 0
+};
+
 // Function to process rows
 const processRow = (row) => {
     Object.keys(row).forEach(key => row[key] = convertValue(row[key]));
     row = handleDotNotation(row);
 
-    // Handle aptitudes
-    if (row.hasOwnProperty("aptitudes")) {
-        if (row.aptitudes === null || row.aptitudes === '') {
-            row.aptitudes = {};
-        } else if (typeof row.aptitudes === 'string' && row.aptitudes.includes('-')) {
-            const [aptKey, aptValue] = row.aptitudes.split('-');  // Split "F-1" into ["F", "1"]
-            row.aptitudes = { [aptKey.toLowerCase()]: parseInt(aptValue, 10) };  // Create the aptitudes object
-        }
+    // Handle tags
+    if (row.hasOwnProperty("tags") && Array.isArray(row.tags)) {
+        row.tags = row.tags.filter(tag =>
+            tag &&
+            typeof tag.id === 'string'
+        );
+    } else {
+        delete row.tags;
     }
 
-    // Ensure description is set to null if empty
-    if (!row.description) row.description = null;
+    // Handle aptitudes
+    if (row.hasOwnProperty("aptitudes")) {
+        let aptitudeData = {};
+
+        if (row.aptitudes === null || row.aptitudes === '') {
+            aptitudeData = {};
+        } else if (typeof row.aptitudes === 'string' && row.aptitudes.includes('-')) {
+            const [aptKey, aptValue] = row.aptitudes.split('-');
+            aptitudeData[aptKey.toLowerCase()] = parseInt(aptValue, 10);
+        }
+
+        row.aptitudes = { ...defaultAptitudes, ...aptitudeData };
+    }
+
+    // Handle damage (from separate fields: damage + type)
+    if ('damage' in row || 'type' in row) {
+        const value = parseInt(row.damage, 10);
+        const type = row.type || 'unknown';
+
+        row.damage = {
+            value: isNaN(value) ? 0 : value,
+            type: type
+        };
+
+        delete row.type;
+    }
+
+    if (!row.description) row.description = "";
 
     return row;
 };
+
 
 // Read and process CSV files
 fs.readdir(importDir, (err, files) => {
