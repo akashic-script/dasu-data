@@ -90,7 +90,7 @@ const processRow = (row, lookup) => {
             acc[attr] = { base: num(row[`${attr}.base`], 3), mod: num(row[`${attr}.mod`], 0) };
             return acc;
         }, {}),
-        stats: ['hp', 'wp', 'avoid', 'def', 'toHit', 'toLand'].reduce((acc, stat) => {
+        stats: ['hp', 'wp', 'avoid', 'def', 'toHit', 'toLand', 'willStrain'].reduce((acc, stat) => {
             acc[stat] = { mod: num(row[`${stat}.mod`], 0) };
             return acc;
         }, {}),
@@ -197,7 +197,7 @@ fs.readdir(importDir, (err, files) => {
     if (err) return console.error("Error reading directory:", err);
 
     // Filter for 'daemon.csv' and process it
-    files.filter(file => file === 'daemon.csv').forEach(file => {
+    files.filter(file => file === 'daemons.csv').forEach(file => {
         const csvFilePath = path.join(importDir, file);
         const jsonFilePath = path.join(exportDir, file.replace('.csv', '.json'));
 

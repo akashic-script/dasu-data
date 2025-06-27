@@ -23,11 +23,11 @@ const data = {
     weapons: require("./scripts/output/weapons.json"),
 }
 
-const daemonFilePath = "./scripts/output/daemon.json";
+const daemonFilePath = "./scripts/output/daemons.json";
 
 // Check if the file exists
 if (fs.existsSync(path.resolve(daemonFilePath))) {
-    data.daemon = require(daemonFilePath);
+    data.daemons = require(daemonFilePath);
 }
 
 module.exports = data
