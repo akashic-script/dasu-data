@@ -112,7 +112,7 @@ Below is the proper JSON syntax for each item type processed by these scripts. T
 
 Defines the metadata for a module, necessary for the webapp to process the DSM file.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -128,7 +128,7 @@ Defines the metadata for a module, necessary for the webapp to process the DSM f
 
 Represents a summonable entity.
 
-```json
+```ts
 {
   "id": string,
   "dsid": string,
@@ -237,7 +237,7 @@ Represents a summonable entity.
 
 Classifies daemons into broad categories based on their primary nature or theme.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -251,7 +251,7 @@ Classifies daemons into broad categories based on their primary nature or theme.
 
 Provides a more specific classification of daemons, subtype typically indicating their stage in development.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -265,7 +265,7 @@ Provides a more specific classification of daemons, subtype typically indicating
 
 Specifies a daemon's primary function or strategy in combat or other interactions.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -278,7 +278,7 @@ Specifies a daemon's primary function or strategy in combat or other interaction
 
 Represents objects that can be used for various effects or benefits.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -293,7 +293,7 @@ Represents objects that can be used for various effects or benefits.
 
 Equipment designed for entities to use to perform attacks.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -311,7 +311,7 @@ Equipment designed for entities to use to perform attacks.
 
 A slotable upgrade that can be attached to a weapon to provide additional effects or enhancements.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -326,7 +326,7 @@ A slotable upgrade that can be attached to a weapon to provide additional effect
 
 Magical abilities that actors can cast to produce elemental attacks.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -347,7 +347,7 @@ Magical abilities that actors can cast to produce elemental attacks.
 
 Abilities that can apply status conditions to targets, either debuffs and buffs.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -368,7 +368,7 @@ Abilities that can apply status conditions to targets, either debuffs and buffs.
 
 Abilities that provide healing or other beneficial effects to restore or enhance entities.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -388,7 +388,7 @@ Abilities that provide healing or other beneficial effects to restore or enhance
 
 Special non-magical abilities, always physical, unless altered through other means.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -409,7 +409,7 @@ Special non-magical abilities, always physical, unless altered through other mea
 
 In contrast to Abilities, can be used for Negotiation.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -427,7 +427,7 @@ In contrast to Abilities, can be used for Negotiation.
 
 Temporary or permanent conditions affecting entities.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -441,7 +441,7 @@ Temporary or permanent conditions affecting entities.
 
 Unique abilities not covered by abilities or tactics. Exclusive to daemons, and not meant to operate outside the general rules.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -454,7 +454,7 @@ Unique abilities not covered by abilities or tactics. Exclusive to daemons, and 
 
 Alternate forms or higher states of being for daemons to transform into.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
@@ -468,7 +468,7 @@ Alternate forms or higher states of being for daemons to transform into.
 
 Permanent effects or marks for summoners.
 
-```json
+```ts
 {
   "name": string,
   "category"?: string,
@@ -480,7 +480,7 @@ Permanent effects or marks for summoners.
 
 Actions to perform for the Arbitration encounters.
 
-```json
+```ts
 {
   "id": string,
   "name": string,
