@@ -1,33 +1,40 @@
-"use script"
+"use strict";
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
+
+const folder = process.argv[2] || process.env.DEFAULT_OUTPUT_FOLDER;
+const basePath = path.resolve(__dirname, "scripts", "output", folder);
+
+function safeLoad(file) {
+    const fullPath = path.join(basePath, file);
+    if (fs.existsSync(fullPath)) {
+        return require(fullPath);
+    } else {
+        console.warn(`Warning: Missing file ${fullPath}`);
+        return undefined;
+    }
+}
 
 const data = {
-    archetypes: require("./scripts/output/archetypes.json"),
-    subtypes: require("./scripts/output/subtypes.json"),
-    roles: require("./scripts/output/roles.json"),
-    afflictions: require("./scripts/output/afflictions.json"),
-    arbitrations: require("./scripts/output/arbitrations.json"),
-    manifest: require("./scripts/output/manifest.json"),
-    items: require("./scripts/output/items.json"),
-    restoratives: require("./scripts/output/restoratives.json"),
-    scars: require("./scripts/output/scars.json"),
-    specialabilities: require("./scripts/output/specialabilities.json"),
-    spells: require("./scripts/output/spells.json"),
-    statuses: require("./scripts/output/statuses.json"),
-    tactics: require("./scripts/output/tactics.json"),
-    tags: require("./scripts/output/tags.json"),
-    techniques: require("./scripts/output/techniques.json"),
-    transformations: require("./scripts/output/transformations.json"),
-    weapons: require("./scripts/output/weapons.json"),
-}
+    archetypes: safeLoad("archetypes.json"),
+    subtypes: safeLoad("subtypes.json"),
+    roles: safeLoad("roles.json"),
+    afflictions: safeLoad("afflictions.json"),
+    arbitrations: safeLoad("arbitrations.json"),
+    manifest: safeLoad("manifest.json"),
+    items: safeLoad("items.json"),
+    restoratives: safeLoad("restoratives.json"),
+    scars: safeLoad("scars.json"),
+    specialabilities: safeLoad("specialabilities.json"),
+    spells: safeLoad("spells.json"),
+    statuses: safeLoad("statuses.json"),
+    tactics: safeLoad("tactics.json"),
+    tags: safeLoad("tags.json"),
+    techniques: safeLoad("techniques.json"),
+    transformations: safeLoad("transformations.json"),
+    weapons: safeLoad("weapons.json"),
+    daemons: safeLoad("daemons.json"),
+};
 
-const daemonFilePath = "./scripts/output/daemons.json";
-
-// Check if the file exists
-if (fs.existsSync(path.resolve(daemonFilePath))) {
-    data.daemons = require(daemonFilePath);
-}
-
-module.exports = data
+module.exports = data;

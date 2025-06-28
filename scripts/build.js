@@ -2,34 +2,60 @@ const zl = require('zip-lib');
 const fs = require('fs');
 const path = require('path');
 
-const manifestPath = path.join(__dirname, './output/manifest.json');
-
-// Check if manifest.json exists
-if (!fs.existsSync(manifestPath)) {
-    console.log(`File not found: ${manifestPath}`);
-    return;
+function checkFolderArgument() {
+    const folder = process.argv[2];
+    if (!folder) {
+        console.error('❌ Error: Missing required folder argument.');
+        process.exit(1);
+    }
+    return folder;
 }
 
-// Read and parse manifest.json
-fs.readFile(manifestPath, 'utf8', (err, data) => {
-    if (err) {
-        console.log('Error reading manifest.json:', err);
-        return;
+function checkManifestExists(outputFolder) {
+    const manifestPath = path.join(outputFolder, 'manifest.json');
+    if (!fs.existsSync(manifestPath)) {
+        console.error(`❌ File not found: ${manifestPath}`);
+        process.exit(1);
     }
+    return manifestPath;
+}
 
-    const manifest = JSON.parse(data);
-    const { id, version } = manifest[0];
-
-    const filepath = path.join(__dirname, '../build', `${id}-${version}.dsm`);
-    console.log('Saving archive to:', filepath);
-
-    zl.archiveFolder(path.join(__dirname, './output'), filepath, {
-        filter: (file) => {
-            const fileName = path.basename(file);
-            return fileName;
+function readAndParseManifest(manifestPath) {
+    try {
+        const data = fs.readFileSync(manifestPath, 'utf8');
+        const manifest = JSON.parse(data);
+        if (!Array.isArray(manifest) || manifest.length === 0) {
+            console.error('❌ Manifest JSON is empty or invalid');
+            process.exit(1);
         }
+        const { id, version } = manifest[0];
+        if (!id || !version) {
+            console.error('❌ Manifest must include id and version');
+            process.exit(1);
+        }
+        return { id, version };
+    } catch (err) {
+        console.error(`❌ Error processing manifest.json: ${err.message}`);
+        process.exit(1);
+    }
+}
+
+function createArchive(outputFolder, id, version) {
+    const archivePath = path.join(__dirname, '..', 'build', `${id}-${version}.dsm`);
+    console.log(`🚀 Saving archive to: ${archivePath}`);
+    zl.archiveFolder(outputFolder, archivePath, {
+        filter: (file) => true // include all files
     }).then(
-        () => console.log('Done archiving!'),
-        (err) => console.log('Error archiving:', err)
+        () => console.log('✅ Done archiving!'),
+        (err) => {
+            console.error(`❌ Error archiving: ${err.message}`);
+            process.exit(1);
+        }
     );
-});
+}
+
+const folder = checkFolderArgument();
+const outputFolder = path.join(__dirname, 'output', folder);
+const manifestPath = checkManifestExists(outputFolder);
+const { id, version } = readAndParseManifest(manifestPath);
+createArchive(outputFolder, id, version);

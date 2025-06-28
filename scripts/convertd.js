@@ -1,15 +1,35 @@
 const fs = require('fs-extra');
-const Papa = require('papaparse');
 const path = require('path');
+const Papa = require('papaparse');
 
-const { afflictions, archetypes, subtypes, roles, tactics, weapons, spells, restoratives, techniques } = require('../index'); // Use pre-imported data
+const {
+    afflictions,
+    archetypes,
+    subtypes,
+    roles,
+    tactics,
+    weapons,
+    spells,
+    restoratives,
+    techniques,
+} = require('../index');
 
-const importDir = path.join(__dirname, 'input');
-const exportDir = path.join(__dirname, 'output');
+function checkFolderArgument() {
+    const folder = process.argv[2];
+    if (!folder) {
+        console.error("❌ Error: Missing required folder argument.");
+        process.exit(1);
+    }
+    return folder;
+}
 
-fs.ensureDirSync(exportDir);
+function setupDirectories(folder) {
+    const importDir = path.join(__dirname, 'input', folder);
+    const exportDir = path.join(__dirname, 'output', folder);
+    fs.ensureDirSync(exportDir);
+    return { importDir, exportDir };
+}
 
-// Function to generate a random ID
 function generateID() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let id = '';
@@ -19,198 +39,254 @@ function generateID() {
     return id;
 }
 
-// Function to convert array of objects into an object indexed by 'id'
-const createLookup = (data, key) => {
-    if (!data || !Array.isArray(data)) {
-        console.error(`Error: Data for ${key} is either missing or not an array.`);
-        return {};  // Return an empty object if the data is invalid
-    }
-
-    return data.reduce((lookup, item) => {
-        if (item.id) {  // Ensure the item has an 'id' before adding it to the lookup
-            lookup[item.id] = item;
-        } else {
-            console.warn(`Item missing 'id' in ${key}:`, item);
-        }
-        return lookup;
+function createLookup(data) {
+    if (!Array.isArray(data)) return {};
+    return data.reduce((acc, item) => {
+        if (item.id) acc[item.id] = item;
+        return acc;
     }, {});
-};
+}
 
-// Function to populate missing fields from the pre-imported data
-const populateFromLookup = (key, item, lookup) => {
-    const data = lookup[key];
+function populateFromLookup(category, item, lookups) {
+    if (!item || !item.id) return;
+    const data = lookups[category]?.[item.id];
     if (!data) {
-        console.warn(`No data found in lookup for ${key}`);
+        item.name ||= 'Unknown';
+        item.description ||= '';
         return;
     }
+    Object.entries(data).forEach(([key, val]) => {
+        if (item[key] === undefined || item[key] === '') {
+            item[key] = val;
+        }
+    });
+}
 
-    const itemData = data[item.id];
+function parseNumber(val, fallback = 0) {
+    if (val === undefined || val === null || val === '') return fallback;
+    const n = parseInt(val, 10);
+    return isNaN(n) ? fallback : n;
+}
 
-    if (itemData) {
-        // Populate missing fields if found in the lookup
-        Object.assign(item, itemData);
-        console.log(`Populated ${key} with ID: ${item.id}`);
-    } else {
-        console.warn(`No matching item found for ${key} with ID: ${item.id}`);
-        item.name = item.name || 'Unknown';
-        item.description = item.description || 'No description available.';
+function parseString(val, fallback = '') {
+    if (val === undefined || val === null) return fallback;
+    return String(val);
+}
+
+function validateDaemon(daemon, lookups) {
+    const errors = [];
+    if (!daemon.id || daemon.id === '') errors.push('Missing ID');
+    if (!daemon.name || daemon.name === '') errors.push('Missing name');
+    if (!daemon.archetypes?.id || daemon.archetypes.id === '') {
+        errors.push('Missing archetype ID (optional)');
+    } else if (!lookups.archetypes[daemon.archetypes.id]) {
+        errors.push(`Archetype ID "${daemon.archetypes.id}" not found`);
     }
-};
+    if (!daemon.subtypes?.id || daemon.subtypes.id === '') {
+        errors.push('Missing subtype ID');
+    } else if (!lookups.subtypes[daemon.subtypes.id]) {
+        errors.push(`Subtype ID "${daemon.subtypes.id}" not found`);
+    }
+    if (typeof daemon.level !== 'number' || daemon.level < 1) {
+        errors.push('Level must be a positive integer ≥ 1');
+    }
+    if (typeof daemon.merit !== 'number' || daemon.merit < 0) {
+        errors.push('Merit must be a non-negative integer');
+    }
+    daemon.roles.forEach((role) => {
+        if (!lookups.roles[role.id]) {
+            errors.push(`Role ID "${role.id}" not found`);
+        }
+    });
+    daemon.weapons.forEach((weapon) => {
+        if (!lookups.weapons[weapon.id]) {
+            errors.push(`Weapon ID "${weapon.id}" not found`);
+        }
+    });
+    daemon.tactics.forEach((tactic) => {
+        if (!lookups.tactics[tactic.id]) {
+            errors.push(`Tactic ID "${tactic.id}" not found`);
+        }
+    });
+    ['spells', 'afflictions', 'restoratives', 'techniques'].forEach((type) => {
+        daemon.abilities[type].forEach((ability) => {
+            if (!lookups[type][ability.id]) {
+                errors.push(`${type.slice(0, -1).charAt(0).toUpperCase() + type.slice(1, -1)} ID "${ability.id}" not found`);
+            }
+        });
+    });
+    Object.entries(daemon.attributes).forEach(([attr, val]) => {
+        if (val.base < 1 || val.base > 10) {
+            errors.push(`Attribute ${attr} base value (${val.base}) out of range (1-10)`);
+        }
+    });
+    const validResistances = ['normal', 'weak', 'resist', 'nullify', 'drain'];
+    Object.entries(daemon.resistances).forEach(([key, val]) => {
+        if (!validResistances.includes(val)) {
+            errors.push(`Resistance ${key} has invalid value "${val}"`);
+        }
+    });
+    daemon.special.abilities.forEach((special) => {
+        if (!special.id || !special.name || !special.cost) {
+            errors.push('Special ability missing required fields (id, name, cost)');
+        }
+    });
+    daemon.special.transformations.forEach((trans) => {
+        if (!trans.id || !trans.name || !trans.cost) {
+            errors.push('Transformation missing required fields (id, name, cost)');
+        }
+    });
+    return errors;
+}
 
-// Function to process each CSV row and map it to daemon structure
-const processRow = (row, lookup) => {
-    const num = (val, fallback = 0) => (val === undefined || val === null || val === '' ? fallback : parseInt(val, 10) || fallback);
-    const str = (val, fallback = '') => (val === undefined || val === null ? fallback : String(val));
-
-    const newDaemon = {
-        id: str(row.id) || generateID(),
-        dsid: str(row.dsid) || str(row.id) || generateID(),
-        publishId: '',
+function buildDaemonObject(row, lookups) {
+    const daemon = {
+        id: parseString(row.id) || generateID(),
+        dsid: parseString(row.dsid) || parseString(row.id) || generateID(),
         type: 'daemon',
-        name: str(row.name, 'Unknown'),
-        image: { src: str(row['image.src']), credit: str(row['image.credit']) },
-        level: num(row.level, 1),
-        merit: num(row.merit, 0),
-        archetypes: {
-            id: str(row.archetype),
-            name: str(row.archetype_name),
-            category: 'archetype',
-            description: '',
-            benefits: ''
+        publishId: '',
+        name: parseString(row.name, 'Unknown'),
+        image: {
+            src: parseString(row['image.src']),
+            credit: parseString(row['image.credit']),
         },
-        subtypes: {
-            id: str(row.subtype),
-            name: str(row.subtype_name),
-            category: 'subtype',
-            description: ''
-        },
-        roles: row.role ? row.role.split(',').map(role => ({ id: role.trim(), name: '', category: 'role', description: '' })) : [],
-        origin: row.origin ? row.origin.split(',').map(item => item.trim()) : [],
-        attributes: ['pow', 'dex', 'will', 'sta'].reduce((acc, attr) => {
-            acc[attr] = { base: num(row[`${attr}.base`], 3), mod: num(row[`${attr}.mod`], 0) };
+        level: parseNumber(row.level, 1),
+        merit: parseNumber(row.merit, 0),
+        archetypes: { id: parseString(row.archetype), category: 'archetype' },
+        subtypes: { id: parseString(row.subtype), category: 'subtype' },
+        roles: row.role ? row.role.split(',').map((r) => ({ id: r.trim(), category: 'role' })) : [],
+        origin: row.origin ? row.origin.split(',').map((o) => o.trim()) : [],
+        attributes: ['pow', 'dex', 'will', 'sta'].reduce((acc, a) => {
+            acc[a] = {
+                base: parseNumber(row[`${a}.base`], 3),
+                mod: parseNumber(row[`${a}.mod`], 0),
+            };
             return acc;
         }, {}),
-        stats: ['hp', 'wp', 'avoid', 'def', 'toHit', 'toLand', 'willStrain'].reduce((acc, stat) => {
-            acc[stat] = { mod: num(row[`${stat}.mod`], 0) };
+        stats: ['hp', 'wp', 'avoid', 'def', 'toHit', 'toLand', 'willStrain'].reduce((acc, s) => {
+            acc[s] = { 
+                mod: parseNumber(row[`${s}.mod`], 0),
+                multiplier: parseNumber(row[`${s}.multiplier`], 1)
+            };
             return acc;
         }, {}),
         aptitudes: {
-            f: num(row['apt.f']),
-            i: num(row['apt.i']),
-            el: num(row['apt.el']),
-            w: num(row['apt.w']),
-            ea: num(row['apt.ea']),
-            l: num(row['apt.l']),
-            d: num(row['apt.d']),
-            dp: num(row['apt.dp']),
-            dm: num(row['apt.dm']),
-            da: num(row['apt.da']),
-            h: num(row['apt.h']),
-            tb: num(row['apt.tb']),
-            tt: num(row['apt.tt']),
-            tg: num(row['apt.tg']),
-            ta: num(row['apt.ta']),
-            assist: num(row['apt.assist'])
+            f: parseNumber(row['apt.f']),
+            i: parseNumber(row['apt.i']),
+            el: parseNumber(row['apt.el']),
+            w: parseNumber(row['apt.w']),
+            ea: parseNumber(row['apt.ea']),
+            l: parseNumber(row['apt.l']),
+            d: parseNumber(row['apt.d']),
+            dp: parseNumber(row['apt.dp']),
+            dm: parseNumber(row['apt.dm']),
+            da: parseNumber(row['apt.da']),
+            h: parseNumber(row['apt.h']),
+            tb: parseNumber(row['apt.tb']),
+            tt: parseNumber(row['apt.tt']),
+            tg: parseNumber(row['apt.tg']),
+            ta: parseNumber(row['apt.ta']),
+            assist: parseNumber(row['apt.assist']),
         },
         resistances: {
-            p: str(row['res.p'], 'normal'),
-            f: str(row['res.f'], 'normal'),
-            i: str(row['res.i'], 'normal'),
-            el: str(row['res.el'], 'normal'),
-            w: str(row['res.w'], 'normal'),
-            ea: str(row['res.ea'], 'normal'),
-            l: str(row['res.l'], 'normal'),
-            d: str(row['res.d'], 'normal')
+            p: parseString(row['res.p'], 'normal'),
+            f: parseString(row['res.f'], 'normal'),
+            i: parseString(row['res.i'], 'normal'),
+            el: parseString(row['res.el'], 'normal'),
+            w: parseString(row['res.w'], 'normal'),
+            ea: parseString(row['res.ea'], 'normal'),
+            l: parseString(row['res.l'], 'normal'),
+            d: parseString(row['res.d'], 'normal'),
         },
-        weapons: row.weapons ? row.weapons.split(',').map(weapon => ({ id: weapon.trim(), name: '', category: 'weapon', range: '', damage: 0, toHit: 0, cost: 0, tags: [], description: '' })) : [],
+        weapons: row.weapons ? row.weapons.split(',').map((w) => ({ id: w.trim(), category: 'weapon' })) : [],
         abilities: {
-            spells: row.spells ? row.spells.split(',').map(item => ({ id: item.trim(), name: '', category: 'spell', description: null, aptitudes: {} })) : [],
-            afflictions: row.afflictions ? row.afflictions.split(',').map(item => ({ id: item.trim(), name: '', category: 'affliction', description: null, aptitudes: {} })) : [],
-            restoratives: row.restoratives ? row.restoratives.split(',').map(item => ({ id: item.trim(), name: '', category: 'restorative', description: null, aptitudes: {} })) : [],
-            techniques: row.techniques ? row.techniques.split(',').map(item => ({ id: item.trim(), name: '', category: 'technique', description: null, aptitudes: {} })) : []
+            spells: row.spells ? row.spells.split(',').map((s) => ({ id: s.trim(), category: 'spell' })) : [],
+            afflictions: row.afflictions ? row.afflictions.split(',').map((a) => ({ id: a.trim(), category: 'affliction' })) : [],
+            restoratives: row.restoratives ? row.restoratives.split(',').map((r) => ({ id: r.trim(), category: 'restorative' })) : [],
+            techniques: row.techniques ? row.techniques.split(',').map((t) => ({ id: t.trim(), category: 'technique' })) : [],
         },
-        tactics: row.tactics ? row.tactics.split(',').map(tactic => ({ id: tactic.trim(), name: '', category: 'tactic', govern: 'int', damage: 0, toLand: 0, isInfinity: false, cost: 0, description: '' })) : [],
+        tactics: row.tactics ? row.tactics.split(',').map((t) => ({ id: t.trim(), category: 'tactic' })) : [],
         special: {
             abilities: row['special.id'] && row['special.name'] && row['special.cost'] ? [{
                 id: row['special.id'],
                 name: row['special.name'],
                 category: 'specialability',
-                description: row['special.effect'],
-                cost: row['special.cost']
+                description: row['special.effect'] || '',
+                cost: row['special.cost'],
             }] : [],
             transformations: row['transform.id'] && row['transform.name'] && row['transform.merit'] ? [{
                 id: row['transform.id'],
                 name: row['transform.name'],
                 category: 'transformation',
-                cost: row['transform.merit']
-            }] : []
+                cost: row['transform.merit'],
+            }] : [],
         },
     };
+    return daemon;
+}
 
-    // Process resistances from columns like 'weak', 'resist', etc.
-    const elementMap = { fire: 'f', ice: 'i', electric: 'el', wind: 'w', earth: 'ea', light: 'l', dark: 'd', physical: 'p' };
-    const resistanceTypes = ['weak', 'resist', 'nullify', 'drain'];
-    resistanceTypes.forEach(type => {
+function processRow(row, lookups) {
+    const daemon = buildDaemonObject(row, lookups);
+    const elementMap = {
+        fire: 'f', ice: 'i', electric: 'el', wind: 'w', earth: 'ea', light: 'l', dark: 'd', physical: 'p',
+    };
+    ['weak', 'resist', 'nullify', 'drain'].forEach((type) => {
         if (row[type]) {
-            row[type].split(',').map(el => el.trim()).forEach(element => {
-                const shortCode = elementMap[element.toLowerCase()];
-                if (shortCode) newDaemon.resistances[shortCode] = type;
+            row[type].split(',').map((e) => e.trim()).forEach((el) => {
+                const short = elementMap[el.toLowerCase()];
+                if (short) daemon.resistances[short] = type;
             });
         }
     });
-
-    // Process aptitudes from a single 'aptitude' column (e.g., "f-2, i-1")
     if (row.aptitude) {
-        row.aptitude.split(',').map(apt => apt.trim()).forEach(apt => {
-            const [key, value] = apt.split('-').map(part => part.trim());
-            if (key && value && !isNaN(parseInt(value))) newDaemon.aptitudes[key.toLowerCase()] = parseInt(value);
+        row.aptitude.split(',').map((apt) => apt.trim()).forEach((apt) => {
+            const [key, val] = apt.split('-').map((x) => x.trim());
+            if (key && val && !isNaN(parseInt(val))) {
+                daemon.aptitudes[key.toLowerCase()] = parseInt(val);
+            }
         });
     }
-
-    // Populate data from the lookup
-    const populateField = (key) => {
-        // Check if it's an array (like 'roles' or 'abilities.spells')
-
-        if (Array.isArray(newDaemon[key])) {
-            newDaemon[key].forEach(item => populateFromLookup(key, item, lookup));
+    const validationErrors = validateDaemon(daemon, lookups);
+    if (validationErrors.length > 0) {
+        console.warn(`⚠️ Validation errors for daemon "${daemon.name || 'Unknown'}" (ID: ${daemon.id || 'N/A'}): ${validationErrors.join(', ')}`);
+    }
+    const lookupFields = ['archetypes', 'subtypes', 'roles', 'weapons', 'tactics'];
+    lookupFields.forEach((field) => {
+        if (Array.isArray(daemon[field])) {
+            daemon[field].forEach((item) => populateFromLookup(field, item, lookups));
         } else {
-            // If it's not an array (like 'archetypes' or 'subtypes')
-
-            populateFromLookup(key, newDaemon[key], lookup);
+            populateFromLookup(field, daemon[field], lookups);
         }
-    };
-
-    // Special treatment for abilities fields inside abilities object (spells, afflictions, etc.)
-    ['spells', 'afflictions', 'restoratives', 'techniques'].forEach(type => {
-        newDaemon.abilities[type].forEach(item => populateFromLookup(type, item, lookup));
     });
+    ['spells', 'afflictions', 'restoratives', 'techniques'].forEach((type) => {
+        daemon.abilities[type].forEach((item) => populateFromLookup(type, item, lookups));
+    });
+    return daemon;
+}
 
-    // Populate other fields as well
-    ['archetypes', 'subtypes', 'roles', 'weapons', 'tactics'].forEach(populateField);
-
-    console.log("Processed daemon:", newDaemon); // Log the final object
-    return newDaemon;
-};
-
-// Function to process CSV files and map them to JSON
-fs.readdir(importDir, (err, files) => {
-    if (err) return console.error("Error reading directory:", err);
-
-    // Filter for 'daemon.csv' and process it
-    files.filter(file => file === 'daemons.csv').forEach(file => {
-        const csvFilePath = path.join(importDir, file);
-        const jsonFilePath = path.join(exportDir, file.replace('.csv', '.json'));
-
-        fs.readFile(csvFilePath, 'utf8', (err, data) => {
-            if (err) return console.error(`Error reading file ${file}:`, err);
-
-            // Parse CSV data
+function processDaemonsCsv(importDir, exportDir) {
+    fs.readdir(importDir, (err, files) => {
+        if (err) {
+            console.error(`❌ Error reading import directory: ${err.message}`);
+            return;
+        }
+        const daemonFile = files.find((f) => f === 'daemons.csv');
+        if (!daemonFile) {
+            console.error('❌ daemons.csv not found in input directory');
+            return;
+        }
+        const csvPath = path.join(importDir, daemonFile);
+        const jsonPath = path.join(exportDir, daemonFile.replace('.csv', '.json'));
+        fs.readFile(csvPath, 'utf8', (err, data) => {
+            if (err) {
+                console.error(`❌ Error reading daemons.csv: ${err.message}`);
+                return;
+            }
             Papa.parse(data, {
                 header: true,
                 skipEmptyLines: true,
-                complete: result => {
-                    // Create lookups for each data type
-                    const lookup = {
+                complete: (results) => {
+                    const lookups = {
                         afflictions: createLookup(afflictions),
                         archetypes: createLookup(archetypes),
                         subtypes: createLookup(subtypes),
@@ -219,18 +295,26 @@ fs.readdir(importDir, (err, files) => {
                         weapons: createLookup(weapons),
                         spells: createLookup(spells),
                         restoratives: createLookup(restoratives),
-                        techniques: createLookup(techniques)
+                        techniques: createLookup(techniques),
                     };
-
-                    const processedData = result.data.map(row => processRow(row, lookup));
-
-                    // Write to JSON file
-                    fs.writeJson(jsonFilePath, processedData, { spaces: 2 }, err => {
-                        if (err) console.error(`Error writing JSON for ${file}:`, err);
+                    const requiredLookups = ['afflictions', 'archetypes', 'subtypes', 'roles', 'tactics', 'weapons', 'spells', 'restoratives', 'techniques'];
+                    const missingLookups = requiredLookups.filter(key => !lookups[key] || Object.keys(lookups[key]).length === 0);
+                    if (missingLookups.length > 0) {
+                        console.error(`❌ Missing required JSON lookup data for: ${missingLookups.join(', ')}. Cannot continue processing.`);
+                        process.exit(1);
+                    }
+                    const processed = results.data.map((row) => processRow(row, lookups));
+                    fs.writeJson(jsonPath, processed, { spaces: 2 }, (err) => {
+                        if (err) console.error(`❌ Error writing daemon JSON: ${err.message}`);
+                        else console.log(`✅ Daemon JSON generated at ${jsonPath}`);
                     });
                 },
-                error: error => console.error(`Error parsing CSV file ${file}:`, error),
+                error: (error) => console.error(`❌ CSV parse error: ${error.message}`),
             });
         });
     });
-});
+}
+
+const folder = checkFolderArgument();
+const { importDir, exportDir } = setupDirectories(folder);
+processDaemonsCsv(importDir, exportDir);
