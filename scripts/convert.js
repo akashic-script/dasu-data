@@ -52,7 +52,7 @@ function handleDotNotation(row) {
     }, {});
 }
 
-function processRow(row) {
+function processRow(row, headers) {
     Object.keys(row).forEach(key => row[key] = convertValue(row[key]));
     row = handleDotNotation(row);
     const defaultAptitudes = {
@@ -61,10 +61,12 @@ function processRow(row) {
         tg: 0, ta: 0, assist: 0
     };
 
-    if (row.hasOwnProperty("tags") && Array.isArray(row.tags)) {
-        row.tags = row.tags.filter(tag => tag && typeof tag.id === 'string');
-    } else {
-        delete row.tags;
+    if (headers.includes("tags")) {
+        if (row.hasOwnProperty("tags") && Array.isArray(row.tags)) {
+            row.tags = row.tags.filter(tag => tag && typeof tag.id === 'string');
+        } else {
+            row.tags = [];
+        }
     }
 
     if (row.hasOwnProperty("aptitudes")) {
@@ -119,7 +121,8 @@ function convertCsvToJson(importDir, exportDir, folderName) {
                     header: true,
                     skipEmptyLines: true,
                     complete: result => {
-                        const processedData = result.data.map(processRow);
+                        const headers = result.meta.fields || [];
+                        const processedData = result.data.map(row => processRow(row, headers));
                         fs.writeJson(jsonFilePath, processedData, { spaces: 2 }, err => {
                             if (err) {
                                 console.error(`❌ Error writing JSON for ${file}: ${err.message}`);
